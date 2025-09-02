@@ -6,16 +6,26 @@ import 'dotenv/config';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
+// Khi bot online
 client.once(Events.ClientReady, c => {
   console.log(`✅ Bot đã đăng nhập với tên: ${c.user.tag}`);
 });
 
+// Debug helper
+function logDebug(stage, data) {
+  console.log(`🛠 [DEBUG] ${stage}:`, data);
+}
+
 // Slash command mở Modal
 client.on(Events.InteractionCreate, async interaction => {
+  logDebug('Interaction received', { type: interaction.type, user: interaction.user?.tag, command: interaction.commandName });
+
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'hukhong_post') {
     try {
+      logDebug('Opening Modal', interaction.user?.tag);
+
       const modal = new ModalBuilder()
         .setCustomId('post_modal')
         .setTitle('Tạo bài viết mới');
@@ -38,21 +48,27 @@ client.on(Events.InteractionCreate, async interaction => {
       );
 
       await interaction.showModal(modal);
+      logDebug('Modal shown', interaction.user?.tag);
+
     } catch (err) {
       console.error('❌ Lỗi khi mở Modal:', err);
     }
   }
 });
 
-// Xử lý submit Modal
+// Modal submit xử lý
 client.on(Events.InteractionCreate, async interaction => {
   if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
     try {
+      logDebug('Modal submitted', interaction.user?.tag);
+
       const title = interaction.fields.getTextInputValue('title_input');
       const content = interaction.fields.getTextInputValue('content_input');
+      logDebug('Modal values', { title, content });
 
       // Defer reply để tránh "did not respond"
       await interaction.deferReply({ ephemeral: true });
+      logDebug('deferReply called', interaction.user?.tag);
 
       const uploadButton = new ButtonBuilder()
         .setCustomId('upload_image')
@@ -63,19 +79,24 @@ client.on(Events.InteractionCreate, async interaction => {
         content: 'Nhấn nút để tải lên ảnh nếu muốn thêm vào bài viết:',
         components: [new ActionRowBuilder().addComponents(uploadButton)]
       });
+      logDebug('Button sent', interaction.user?.tag);
 
-      // Collector cho nút upload
+      // Collector cho button
       const filter = i => i.customId === 'upload_image' && i.user.id === interaction.user.id;
       const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000, max: 1 });
 
       collector.on('collect', async i => {
+        logDebug('Button clicked', i.user?.tag);
         await i.reply({ content: 'Vui lòng gửi ảnh dưới dạng file trong kênh này.', ephemeral: true });
 
-        const fileFilter = m => m.author.id === interaction.user.id && m.attachments.size > 0;
+        // Collector cho file
+        const fileFilter = m => m.author.id === i.user.id && m.attachments.size > 0;
         const fileCollector = interaction.channel.createMessageCollector({ filter: fileFilter, max: 1, time: 300000 });
 
         fileCollector.on('collect', async msg => {
           const attachment = msg.attachments.first();
+          logDebug('File collected', attachment.url);
+
           const embed = {
             title: title,
             description: content,
@@ -84,11 +105,13 @@ client.on(Events.InteractionCreate, async interaction => {
           };
 
           await interaction.followUp({ content: '✅ Bài viết đã được tạo:', embeds: [embed] });
+          logDebug('Embed sent', interaction.user?.tag);
         });
 
         fileCollector.on('end', collected => {
           if (collected.size === 0) {
             interaction.followUp({ content: '⚠️ Không có ảnh được tải lên, bài viết chỉ có text.' });
+            logDebug('No file collected', interaction.user?.tag);
           }
         });
       });
@@ -96,6 +119,7 @@ client.on(Events.InteractionCreate, async interaction => {
       collector.on('end', collected => {
         if (collected.size === 0) {
           interaction.followUp({ content: '⚠️ Bạn đã không nhấn nút tải ảnh, bài viết chỉ có text.' });
+          logDebug('Button not clicked', interaction.user?.tag);
         }
       });
 
