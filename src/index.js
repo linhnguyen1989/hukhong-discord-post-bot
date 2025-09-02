@@ -1,8 +1,9 @@
 const { 
-  Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle, 
-  ActionRowBuilder, InteractionType 
+  Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle,
+  ActionRowBuilder, InteractionType
 } = require('discord.js');
-require('dotenv').config();
+const sizeOf = require('image-size');
+const fetch = require('node-fetch');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -11,7 +12,6 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-  // Xử lý lệnh slash
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'hukhong_post') {
@@ -46,22 +46,18 @@ client.on(Events.InteractionCreate, async interaction => {
     await interaction.showModal(modal);
   }
 
-  // Xử lý submit Modal
   if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
-    await interaction.deferReply({ ephemeral: true }); // defer để tránh timeout
+    await interaction.deferReply({ ephemeral: true });
 
     const title = interaction.fields.getTextInputValue('title_input');
     const content = interaction.fields.getTextInputValue('content_input');
     const image = interaction.fields.getTextInputValue('image_input');
 
-    const embed = {
-      title,
-      description: content,
-      color: 0x00AE86
-    };
+    const embed = { title, description: content, color: 0x00AE86 };
 
-    // Chỉ thêm ảnh nếu người dùng nhập link hợp lệ
+    // Nếu có link ảnh hợp lệ, thêm thumbnail + image
     if (image && image.startsWith('http')) {
+      embed.thumbnail = { url: image };
       embed.image = { url: image };
     }
 
