@@ -4,12 +4,7 @@ require('dotenv').config();
 const commands = [
   new SlashCommandBuilder()
     .setName('hukhong_post')
-    .setDescription('Gửi nội dung và nhận lại')
-    .addStringOption(option => 
-      option.setName('content')
-            .setDescription('Nội dung muốn gửi')
-            .setRequired(true)
-    )
+    .setDescription('Tạo bài viết mới với Modal + upload ảnh')
     .toJSON()
 ];
 
