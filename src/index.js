@@ -1,10 +1,10 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
-import 'dotenv/config';
+const { Client, GatewayIntentBits, Events } = require('discord.js');
+require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.once(Events.ClientReady, c => {
-  console.log(`Bot đã đăng nhập: ${c.user.tag}`);
+client.once(Events.ClientReady, () => {
+  console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
