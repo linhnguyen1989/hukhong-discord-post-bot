@@ -80,9 +80,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Ghép Header + Title + Nội dung
       let desc = '';
-      if (header) desc += `${header}\n\n`;     // Header
-      desc += `**${title}**\n`;                // Title in bold
-      desc += content;                          // Nội dung
+      if (header) desc += `${header}\n\n`;   // Header
+      desc += `**${title}**\n`;              // Title
+      desc += content;                        // Nội dung
       embed.setDescription(desc);
 
       // Thêm Main Image nếu có
