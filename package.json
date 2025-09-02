@@ -1,9 +1,8 @@
 {
   "name": "discord-post-bot",
   "version": "1.0.0",
-  "description": "A Discord bot that creates posts with title, image, content, and footer",
+  "description": "Discord bot tạo bài viết",
   "main": "src/index.js",
-  "type": "module",
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js"

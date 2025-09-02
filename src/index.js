@@ -1,32 +1,32 @@
-import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
-import 'dotenv/config';
+const { Client, GatewayIntentBits, Events } = require('discord.js');
+require('dotenv').config();
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+client.once(Events.ClientReady, c => {
+  console.log(`✅ Bot đã đăng nhập với tên: ${c.user.tag}`);
 });
 
-client.once('ready', () => {
-  console.log(`✅ Bot đã đăng nhập thành công với tên ${client.user.tag}`);
-});
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
 
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isCommand()) return;
-
-  if (interaction.commandName === 'hukhong-post') {
+  if (interaction.commandName === 'hukhong_post') {
     const title = interaction.options.getString('title');
     const content = interaction.options.getString('content');
-    const image = interaction.options.getString('image');
-    const footer = interaction.options.getString('footer');
+    const caption = interaction.options.getString('caption') || '';
+    const image = interaction.options.getString('image') || '';
 
-    const embed = new EmbedBuilder()
-      .setTitle(title)
-      .setDescription(content)
-      .setColor(0x0099ff);
-
-    if (image) embed.setImage(image);
-    if (footer) embed.setFooter({ text: footer });
-
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({
+      embeds: [
+        {
+          title: title,
+          description: content,
+          image: image ? { url: image } : undefined,
+          footer: { text: caption },
+          color: 0x00AE86
+        }
+      ]
+    });
   }
 });
 
