@@ -45,15 +45,15 @@ client.on(Events.InteractionCreate, async interaction => {
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
-      const footerInput = new TextInputBuilder()
-        .setCustomId('footer_input')
-        .setLabel('Footer (tùy chọn)')
-        .setStyle(TextInputStyle.Short)
-        .setRequired(false);
-
       const headerInput = new TextInputBuilder()
         .setCustomId('header_input')
         .setLabel('Header (tùy chọn)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+      const footerInput = new TextInputBuilder()
+        .setCustomId('footer_input')
+        .setLabel('Footer (tùy chọn)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
@@ -72,22 +72,18 @@ client.on(Events.InteractionCreate, async interaction => {
       const title = interaction.fields.getTextInputValue('title_input');
       const content = interaction.fields.getTextInputValue('content_input');
       const mainImage = interaction.fields.getTextInputValue('main_image_input');
-      const footer = interaction.fields.getTextInputValue('footer_input');
       const header = interaction.fields.getTextInputValue('header_input');
+      const footer = interaction.fields.getTextInputValue('footer_input');
 
       // Tạo Embed duy nhất
-      const embed = new EmbedBuilder()
-        .setColor(0x00AE86);
+      const embed = new EmbedBuilder().setColor(0x00AE86);
 
-      // Thêm Header text nếu có
-      if (header) {
-        embed.setDescription(`${header}\n\n${content}`);
-      } else {
-        embed.setDescription(content);
-      }
-
-      // Thêm Title
-      embed.setTitle(title);
+      // Ghép Header + Title + Nội dung
+      let desc = '';
+      if (header) desc += `${header}\n\n`;     // Header
+      desc += `**${title}**\n`;                // Title in bold
+      desc += content;                          // Nội dung
+      embed.setDescription(desc);
 
       // Thêm Main Image nếu có
       if (mainImage && mainImage.startsWith('http')) {
