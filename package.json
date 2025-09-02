@@ -1,8 +1,6 @@
 {
-  "name": "discord-hukhong-post-bot",
+  "name": "discord-hukhong-simple",
   "version": "1.0.0",
-  "description": "Bot Discord tạo bài viết với Modal + upload ảnh, đã fix lỗi 'Ứng dụng không phản hồi'",
-  "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js"
