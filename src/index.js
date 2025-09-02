@@ -1,9 +1,11 @@
 const { 
   Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle,
-  ActionRowBuilder, InteractionType
+  ActionRowBuilder, InteractionType, EmbedBuilder
 } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+const ALLOWED_ROLE_NAME = 'Devision Zero';
 
 client.once(Events.ClientReady, () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
@@ -11,8 +13,13 @@ client.once(Events.ClientReady, () => {
 
 client.on(Events.InteractionCreate, async interaction => {
   try {
-    // Slash command
     if (interaction.isChatInputCommand() && interaction.commandName === 'hukhong_post') {
+      const memberRoles = interaction.member.roles.cache;
+      if (!memberRoles.some(r => r.name === ALLOWED_ROLE_NAME)) {
+        await interaction.reply({ content: '❌ Bạn không có quyền sử dụng bot này.', ephemeral: true });
+        return;
+      }
+
       const modal = new ModalBuilder()
         .setCustomId('post_modal')
         .setTitle('Tạo bài viết mới');
@@ -35,6 +42,12 @@ client.on(Events.InteractionCreate, async interaction => {
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
+      const mainImageInput = new TextInputBuilder()
+        .setCustomId('main_image_input')
+        .setLabel('Link ảnh bài viết (tùy chọn)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
       const footerImageInput = new TextInputBuilder()
         .setCustomId('footer_image_input')
         .setLabel('Link ảnh Footer (tùy chọn)')
@@ -45,43 +58,39 @@ client.on(Events.InteractionCreate, async interaction => {
         new ActionRowBuilder().addComponents(titleInput),
         new ActionRowBuilder().addComponents(contentInput),
         new ActionRowBuilder().addComponents(headerImageInput),
+        new ActionRowBuilder().addComponents(mainImageInput),
         new ActionRowBuilder().addComponents(footerImageInput)
       );
 
       await interaction.showModal(modal);
     }
 
-    // Modal submit
     if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
       const title = interaction.fields.getTextInputValue('title_input');
       const content = interaction.fields.getTextInputValue('content_input');
       const headerImage = interaction.fields.getTextInputValue('header_image_input');
+      const mainImage = interaction.fields.getTextInputValue('main_image_input');
       const footerImage = interaction.fields.getTextInputValue('footer_image_input');
 
-      const embed = { 
-        title, 
-        description: content, 
-        color: 0x00AE86
-      };
+      const embeds = [];
 
       if (headerImage && headerImage.startsWith('http')) {
-        embed.image = { url: headerImage };
+        embeds.push(new EmbedBuilder().setImage(headerImage).setColor(0x00AE86));
+      }
+
+      embeds.push(new EmbedBuilder().setTitle(title).setDescription(content).setColor(0x00AE86));
+
+      if (mainImage && mainImage.startsWith('http')) {
+        embeds.push(new EmbedBuilder().setImage(mainImage).setColor(0x00AE86));
       }
 
       if (footerImage && footerImage.startsWith('http')) {
-        // Footer image Discord embed không có trường riêng, dùng footer text + emoji hoặc push thành field
-        // Cách khả thi: tạo 1 field riêng để hiển thị ảnh footer
-        embed.fields = [
-          {
-            name: '\u200B', // invisible name
-            value: footerImage
-          }
-        ];
-        embed.footer = { text: '\u200B' }; // tránh lỗi footer trống
+        embeds.push(new EmbedBuilder().setImage(footerImage).setColor(0x00AE86));
       }
 
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ embeds });
     }
+
   } catch (err) {
     console.error('Lỗi khi xử lý interaction:', err);
     if (interaction && !interaction.replied) {
