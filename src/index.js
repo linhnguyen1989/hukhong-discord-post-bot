@@ -29,16 +29,23 @@ client.on(Events.InteractionCreate, async interaction => {
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true);
 
-      const imageInput = new TextInputBuilder()
-        .setCustomId('image_input')
-        .setLabel('Link ảnh (tùy chọn)')
+      const headerImageInput = new TextInputBuilder()
+        .setCustomId('header_image_input')
+        .setLabel('Link ảnh Header (tùy chọn)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+      const footerImageInput = new TextInputBuilder()
+        .setCustomId('footer_image_input')
+        .setLabel('Link ảnh Footer (tùy chọn)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
       modal.addComponents(
         new ActionRowBuilder().addComponents(titleInput),
         new ActionRowBuilder().addComponents(contentInput),
-        new ActionRowBuilder().addComponents(imageInput)
+        new ActionRowBuilder().addComponents(headerImageInput),
+        new ActionRowBuilder().addComponents(footerImageInput)
       );
 
       await interaction.showModal(modal);
@@ -48,16 +55,32 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
       const title = interaction.fields.getTextInputValue('title_input');
       const content = interaction.fields.getTextInputValue('content_input');
-      const image = interaction.fields.getTextInputValue('image_input');
+      const headerImage = interaction.fields.getTextInputValue('header_image_input');
+      const footerImage = interaction.fields.getTextInputValue('footer_image_input');
 
-      const embed = { title, description: content, color: 0x00AE86 };
-      if (image && image.startsWith('http')) {
-        embed.thumbnail = { url: image };
-        embed.image = { url: image };
+      const embed = { 
+        title, 
+        description: content, 
+        color: 0x00AE86
+      };
+
+      if (headerImage && headerImage.startsWith('http')) {
+        embed.image = { url: headerImage };
       }
 
-      // BẮT BUỘC reply hoặc deferReply
-      await interaction.reply({ content: '✅ Bài viết đã tạo:', embeds: [embed] });
+      if (footerImage && footerImage.startsWith('http')) {
+        // Footer image Discord embed không có trường riêng, dùng footer text + emoji hoặc push thành field
+        // Cách khả thi: tạo 1 field riêng để hiển thị ảnh footer
+        embed.fields = [
+          {
+            name: '\u200B', // invisible name
+            value: footerImage
+          }
+        ];
+        embed.footer = { text: '\u200B' }; // tránh lỗi footer trống
+      }
+
+      await interaction.reply({ embeds: [embed] });
     }
   } catch (err) {
     console.error('Lỗi khi xử lý interaction:', err);

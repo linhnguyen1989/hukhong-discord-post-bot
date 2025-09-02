@@ -3,7 +3,7 @@ const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 const commands = [
   new SlashCommandBuilder()
     .setName('hukhong_post')
-    .setDescription('Tạo bài viết mới (Modal trực tiếp, tiêu đề + nội dung + link ảnh tùy chọn)')
+    .setDescription('Tạo bài viết mới (Modal trực tiếp, tiêu đề + nội dung + ảnh Header/Footer tùy chọn)')
     .toJSON()
 ];
 
