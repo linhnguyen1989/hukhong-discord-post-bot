@@ -4,7 +4,7 @@ require('dotenv').config();
 const commands = [
   new SlashCommandBuilder()
     .setName('hukhong_post')
-    .setDescription('Tạo bài viết mới với Modal + upload ảnh')
+    .setDescription('Tạo bài viết mới (tiêu đề + nội dung + link ảnh tùy chọn)')
     .toJSON()
 ];
 
