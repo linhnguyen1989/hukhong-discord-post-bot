@@ -1,7 +1,7 @@
 {
-  "name": "discord-post-bot-fixed",
+  "name": "discord-post-bot-full-debug",
   "version": "1.0.0",
-  "description": "Bot Discord tạo bài viết với Modal + upload ảnh, đã fix 'did not respond'",
+  "description": "Bot Discord tạo bài viết với Modal + upload ảnh, đã fix lỗi 'did not respond', full debug",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

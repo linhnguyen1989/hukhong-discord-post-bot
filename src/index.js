@@ -1,12 +1,12 @@
 import { 
   Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle, 
-  ActionRowBuilder, InteractionType, ButtonBuilder, ButtonStyle 
+  ActionRowBuilder, InteractionType, ButtonBuilder, ButtonStyle
 } from 'discord.js';
 import 'dotenv/config';
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-// Khi bot online
+// Bot online
 client.once(Events.ClientReady, c => {
   console.log(`✅ Bot đã đăng nhập với tên: ${c.user.tag}`);
 });
@@ -56,7 +56,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-// Modal submit xử lý
+// Xử lý Modal submit
 client.on(Events.InteractionCreate, async interaction => {
   if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
     try {
@@ -66,10 +66,11 @@ client.on(Events.InteractionCreate, async interaction => {
       const content = interaction.fields.getTextInputValue('content_input');
       logDebug('Modal values', { title, content });
 
-      // Defer reply để tránh "did not respond"
+      // Defer reply ngay khi nhận Modal
       await interaction.deferReply({ ephemeral: true });
       logDebug('deferReply called', interaction.user?.tag);
 
+      // Tạo nút upload ảnh
       const uploadButton = new ButtonBuilder()
         .setCustomId('upload_image')
         .setLabel('Tải ảnh từ máy tính')
@@ -81,16 +82,19 @@ client.on(Events.InteractionCreate, async interaction => {
       });
       logDebug('Button sent', interaction.user?.tag);
 
-      // Collector cho button
+      // Collector cho Button
       const filter = i => i.customId === 'upload_image' && i.user.id === interaction.user.id;
       const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000, max: 1 });
 
-      collector.on('collect', async i => {
-        logDebug('Button clicked', i.user?.tag);
-        await i.reply({ content: 'Vui lòng gửi ảnh dưới dạng file trong kênh này.', ephemeral: true });
+      collector.on('collect', async buttonInteraction => {
+        logDebug('Button clicked', buttonInteraction.user?.tag);
 
-        // Collector cho file
-        const fileFilter = m => m.author.id === i.user.id && m.attachments.size > 0;
+        // Defer reply riêng cho interaction button
+        await buttonInteraction.deferReply({ ephemeral: true });
+        await buttonInteraction.editReply({ content: 'Vui lòng gửi ảnh dưới dạng file trong kênh này.', components: [] });
+
+        // Collector cho file upload
+        const fileFilter = m => m.author.id === buttonInteraction.user.id && m.attachments.size > 0;
         const fileCollector = interaction.channel.createMessageCollector({ filter: fileFilter, max: 1, time: 300000 });
 
         fileCollector.on('collect', async msg => {
@@ -104,13 +108,15 @@ client.on(Events.InteractionCreate, async interaction => {
             color: 0x00AE86
           };
 
-          await interaction.followUp({ content: '✅ Bài viết đã được tạo:', embeds: [embed] });
+          await interaction.channel.send({ content: '✅ Bài viết đã được tạo:', embeds: [embed] });
+          await buttonInteraction.followUp({ content: '✅ Bài viết đã gửi!', ephemeral: true });
           logDebug('Embed sent', interaction.user?.tag);
         });
 
         fileCollector.on('end', collected => {
           if (collected.size === 0) {
-            interaction.followUp({ content: '⚠️ Không có ảnh được tải lên, bài viết chỉ có text.' });
+            interaction.channel.send({ content: '⚠️ Không có ảnh được tải lên, bài viết chỉ có text.' });
+            buttonInteraction.followUp({ content: '⚠️ Bạn đã không gửi ảnh, bài viết chỉ có text.', ephemeral: true });
             logDebug('No file collected', interaction.user?.tag);
           }
         });
@@ -118,7 +124,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
       collector.on('end', collected => {
         if (collected.size === 0) {
-          interaction.followUp({ content: '⚠️ Bạn đã không nhấn nút tải ảnh, bài viết chỉ có text.' });
+          interaction.channel.send({ content: '⚠️ Bạn đã không nhấn nút tải ảnh, bài viết chỉ có text.' });
           logDebug('Button not clicked', interaction.user?.tag);
         }
       });

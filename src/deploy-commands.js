@@ -1,7 +1,7 @@
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 require('dotenv').config();
 
-// Tạo lệnh slash
+// Slash command
 const commands = [
   new SlashCommandBuilder()
     .setName('hukhong_post')
@@ -9,7 +9,7 @@ const commands = [
     .toJSON()
 ];
 
-// Khởi tạo REST client
+// REST client
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 // Debug helper
@@ -17,7 +17,6 @@ function logDebug(stage, data) {
   console.log(`🛠 [DEBUG] ${stage}:`, data);
 }
 
-// Deploy lệnh slash
 (async () => {
   try {
     logDebug('Starting deploy', { CLIENT_ID: process.env.CLIENT_ID, GUILD_ID: process.env.GUILD_ID });
