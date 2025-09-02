@@ -22,6 +22,7 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
 
+      // Tạo Modal
       const modal = new ModalBuilder()
         .setCustomId('post_modal')
         .setTitle('Tạo bài viết mới');
@@ -38,30 +39,30 @@ client.on(Events.InteractionCreate, async interaction => {
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true);
 
-      const headerImageInput = new TextInputBuilder()
-        .setCustomId('header_image_input')
-        .setLabel('Link ảnh Header (tùy chọn)')
-        .setStyle(TextInputStyle.Short)
-        .setRequired(false);
-
       const mainImageInput = new TextInputBuilder()
         .setCustomId('main_image_input')
         .setLabel('Link ảnh bài viết (tùy chọn)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
-      const footerImageInput = new TextInputBuilder()
-        .setCustomId('footer_image_input')
-        .setLabel('Link ảnh Footer (tùy chọn)')
+      const footerInput = new TextInputBuilder()
+        .setCustomId('footer_input')
+        .setLabel('Footer (tùy chọn)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(false);
+
+      const headerInput = new TextInputBuilder()
+        .setCustomId('header_input')
+        .setLabel('Header (tùy chọn)')
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
       modal.addComponents(
         new ActionRowBuilder().addComponents(titleInput),
         new ActionRowBuilder().addComponents(contentInput),
-        new ActionRowBuilder().addComponents(headerImageInput),
         new ActionRowBuilder().addComponents(mainImageInput),
-        new ActionRowBuilder().addComponents(footerImageInput)
+        new ActionRowBuilder().addComponents(headerInput),
+        new ActionRowBuilder().addComponents(footerInput)
       );
 
       await interaction.showModal(modal);
@@ -70,31 +71,35 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
       const title = interaction.fields.getTextInputValue('title_input');
       const content = interaction.fields.getTextInputValue('content_input');
-      const headerImage = interaction.fields.getTextInputValue('header_image_input');
       const mainImage = interaction.fields.getTextInputValue('main_image_input');
-      const footerImage = interaction.fields.getTextInputValue('footer_image_input');
+      const footer = interaction.fields.getTextInputValue('footer_input');
+      const header = interaction.fields.getTextInputValue('header_input');
 
-      // Gửi ảnh Header (nếu có)
-      if (headerImage && headerImage.startsWith('http')) {
-        await interaction.channel.send({ content: headerImage });
-      }
-
-      // Tạo Embed cho Title + Content + Main Image
-      const mainEmbed = new EmbedBuilder()
-        .setTitle(title)
-        .setDescription(content)
+      // Tạo Embed duy nhất
+      const embed = new EmbedBuilder()
         .setColor(0x00AE86);
 
+      // Thêm Header text nếu có
+      if (header) {
+        embed.setDescription(`${header}\n\n${content}`);
+      } else {
+        embed.setDescription(content);
+      }
+
+      // Thêm Title
+      embed.setTitle(title);
+
+      // Thêm Main Image nếu có
       if (mainImage && mainImage.startsWith('http')) {
-        mainEmbed.setImage(mainImage);
+        embed.setImage(mainImage);
       }
 
-      await interaction.reply({ embeds: [mainEmbed] }); // trả lời interaction
-
-      // Gửi ảnh Footer (nếu có)
-      if (footerImage && footerImage.startsWith('http')) {
-        await interaction.channel.send({ content: footerImage });
+      // Thêm Footer text nếu có
+      if (footer) {
+        embed.setFooter({ text: footer });
       }
+
+      await interaction.reply({ embeds: [embed] });
     }
 
   } catch (err) {
