@@ -74,23 +74,27 @@ client.on(Events.InteractionCreate, async interaction => {
       const mainImage = interaction.fields.getTextInputValue('main_image_input');
       const footerImage = interaction.fields.getTextInputValue('footer_image_input');
 
-      const embeds = [];
-
+      // Gửi ảnh Header (nếu có)
       if (headerImage && headerImage.startsWith('http')) {
-        embeds.push(new EmbedBuilder().setImage(headerImage).setColor(0x00AE86));
+        await interaction.channel.send({ content: headerImage });
       }
 
-      embeds.push(new EmbedBuilder().setTitle(title).setDescription(content).setColor(0x00AE86));
+      // Tạo Embed cho Title + Content + Main Image
+      const mainEmbed = new EmbedBuilder()
+        .setTitle(title)
+        .setDescription(content)
+        .setColor(0x00AE86);
 
       if (mainImage && mainImage.startsWith('http')) {
-        embeds.push(new EmbedBuilder().setImage(mainImage).setColor(0x00AE86));
+        mainEmbed.setImage(mainImage);
       }
 
+      await interaction.reply({ embeds: [mainEmbed] }); // trả lời interaction
+
+      // Gửi ảnh Footer (nếu có)
       if (footerImage && footerImage.startsWith('http')) {
-        embeds.push(new EmbedBuilder().setImage(footerImage).setColor(0x00AE86));
+        await interaction.channel.send({ content: footerImage });
       }
-
-      await interaction.reply({ embeds });
     }
 
   } catch (err) {
