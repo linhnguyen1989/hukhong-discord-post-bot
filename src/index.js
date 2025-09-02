@@ -2,8 +2,6 @@ const {
   Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle,
   ActionRowBuilder, InteractionType
 } = require('discord.js');
-const sizeOf = require('image-size');
-const fetch = require('node-fetch');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -55,7 +53,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
     const embed = { title, description: content, color: 0x00AE86 };
 
-    // Nếu có link ảnh hợp lệ, thêm thumbnail + image
     if (image && image.startsWith('http')) {
       embed.thumbnail = { url: image };
       embed.image = { url: image };
