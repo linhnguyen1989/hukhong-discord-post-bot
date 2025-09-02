@@ -1,4 +1,7 @@
-const { Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, InteractionType } = require('discord.js');
+const { 
+  Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle, 
+  ActionRowBuilder, InteractionType 
+} = require('discord.js');
 require('dotenv').config();
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -8,10 +11,10 @@ client.once(Events.ClientReady, () => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+  // Xử lý lệnh slash
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === 'hukhong_post') {
-    // Tạo modal với 3 input: tiêu đề, nội dung, link ảnh (tùy chọn)
     const modal = new ModalBuilder()
       .setCustomId('post_modal')
       .setTitle('Tạo bài viết mới');
@@ -43,7 +46,10 @@ client.on(Events.InteractionCreate, async interaction => {
     await interaction.showModal(modal);
   }
 
+  // Xử lý submit Modal
   if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
+    await interaction.deferReply({ ephemeral: true }); // defer để tránh timeout
+
     const title = interaction.fields.getTextInputValue('title_input');
     const content = interaction.fields.getTextInputValue('content_input');
     const image = interaction.fields.getTextInputValue('image_input');
@@ -54,11 +60,12 @@ client.on(Events.InteractionCreate, async interaction => {
       color: 0x00AE86
     };
 
-    if (image) {
+    // Chỉ thêm ảnh nếu người dùng nhập link hợp lệ
+    if (image && image.startsWith('http')) {
       embed.image = { url: image };
     }
 
-    await interaction.reply({ content: '✅ Bài viết đã tạo:', embeds: [embed] });
+    await interaction.editReply({ content: '✅ Bài viết đã tạo:', embeds: [embed] });
   }
 });
 
