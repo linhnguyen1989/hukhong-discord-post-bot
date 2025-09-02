@@ -3,7 +3,7 @@ const {
   ActionRowBuilder, InteractionType, EmbedBuilder
 } = require('discord.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
 // Role được phép dùng bot (bằng ID)
 const ALLOWED_ROLE_ID = '1279675797346586674';
@@ -15,7 +15,7 @@ client.once(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async interaction => {
   try {
     if (interaction.isChatInputCommand() && interaction.commandName === 'hukhong_post') {
-      
+
       // Kiểm tra role bằng ID
       if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
         await interaction.reply({ content: '❌ Bạn không có quyền sử dụng bot này.', ephemeral: true });
@@ -80,9 +80,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
       // Ghép Header + Title + Nội dung
       let desc = '';
-      if (header) desc += `${header}\n\n`;   // Header
-      desc += `**${title}**\n`;              // Title
-      desc += content;                        // Nội dung
+      if (header) desc += `${header}\n\n`;
+      desc += `**${title}**\n`;
+      desc += content;
       embed.setDescription(desc);
 
       // Thêm Main Image nếu có
@@ -95,7 +95,9 @@ client.on(Events.InteractionCreate, async interaction => {
         embed.setFooter({ text: footer });
       }
 
-      await interaction.reply({ embeds: [embed] });
+      await interaction.deferReply({ ephemeral: true }); // trả lời tạm để tránh timeout
+      await interaction.editReply({ content: '✅ Bài viết đã được gửi!', ephemeral: true });
+      await interaction.channel.send({ embeds: [embed] }); // gửi Embed thực sự, không hiển thị username
     }
 
   } catch (err) {
