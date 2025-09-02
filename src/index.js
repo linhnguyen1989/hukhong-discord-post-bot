@@ -11,7 +11,7 @@ client.once(Events.ClientReady, c => {
   console.log(`✅ Bot đã đăng nhập với tên: ${c.user.tag}`);
 });
 
-// Debug log helper
+// Log debug helper
 function logDebug(stage, data) {
   console.log(`🛠 [DEBUG] ${stage}:`, data);
 }
@@ -19,8 +19,6 @@ function logDebug(stage, data) {
 // Slash command mở Modal
 client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
-
-  logDebug('Interaction received', { type: interaction.type, user: interaction.user?.tag, command: interaction.commandName });
 
   if (interaction.commandName === 'hukhong_post') {
     try {
