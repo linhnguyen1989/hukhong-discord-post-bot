@@ -1,7 +1,7 @@
 {
-  "name": "discord-post-bot-fixed",
+  "name": "discord-post-bot-complete",
   "version": "1.0.0",
-  "description": "Discord bot tạo bài viết",
+  "description": "Discord bot tạo bài viết với Modal + upload ảnh",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

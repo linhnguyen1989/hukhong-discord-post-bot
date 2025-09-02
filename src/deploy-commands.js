@@ -4,22 +4,9 @@ require('dotenv').config();
 const commands = [
   new SlashCommandBuilder()
     .setName('hukhong_post')
-    .setDescription('Tạo một bài viết mới')
-    .addStringOption(option =>
-      option.setName('title')
-        .setDescription('Tiêu đề bài viết')
-        .setRequired(true))
-    .addStringOption(option =>
-      option.setName('content')
-        .setDescription('Nội dung bài viết')
-        .setRequired(true))
-    .addStringOption(option =>
-      option.setName('caption')
-        .setDescription('Chú thích'))
-    .addStringOption(option =>
-      option.setName('image')
-        .setDescription('Link hình ảnh')),
-].map(command => command.toJSON());
+    .setDescription('Tạo một bài viết mới với Modal và upload ảnh')
+    .toJSON()
+];
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
