@@ -5,7 +5,8 @@ const {
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-const ALLOWED_ROLE_NAME = 'Devision Zero';
+// Role được phép dùng bot (bằng ID)
+const ALLOWED_ROLE_ID = '1279675797346586674';
 
 client.once(Events.ClientReady, () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
@@ -14,8 +15,9 @@ client.once(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async interaction => {
   try {
     if (interaction.isChatInputCommand() && interaction.commandName === 'hukhong_post') {
-      const memberRoles = interaction.member.roles.cache;
-      if (!memberRoles.some(r => r.name === ALLOWED_ROLE_NAME)) {
+      
+      // Kiểm tra role bằng ID
+      if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
         await interaction.reply({ content: '❌ Bạn không có quyền sử dụng bot này.', ephemeral: true });
         return;
       }
