@@ -1,5 +1,5 @@
 {
-  "name": "discord-post-bot",
+  "name": "discord-post-bot-fixed",
   "version": "1.0.0",
   "description": "Discord bot tạo bài viết",
   "main": "src/index.js",
