@@ -10,6 +10,7 @@ import {
   EmbedBuilder
 } from "discord.js";
 import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
+startTikTokWatcher("docdoan.vanco", 3); // kiểm tra mỗi 3 phút
 import dotenv from "dotenv";
 dotenv.config();
 
