@@ -1,59 +1,79 @@
-const { 
-  Client, GatewayIntentBits, Events, ModalBuilder, TextInputBuilder, TextInputStyle,
-  ActionRowBuilder, InteractionType, EmbedBuilder
-} = require('discord.js');
+import {
+  Client,
+  GatewayIntentBits,
+  Events,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder,
+  InteractionType,
+  EmbedBuilder
+} from "discord.js";
+import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
+import dotenv from "dotenv";
+dotenv.config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
-
-// Role được phép dùng bot (bằng ID)
-const ALLOWED_ROLE_ID = '1279675797346586674';
-
-client.once(Events.ClientReady, () => {
-  console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
+// Khởi tạo bot Discord
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-  try {
-    if (interaction.isChatInputCommand() && interaction.commandName === 'hukhong_post') {
+// Role được phép dùng bot (bằng ID)
+const ALLOWED_ROLE_ID = "1279675797346586674";
 
+// Khi bot sẵn sàng
+client.once(Events.ClientReady, async () => {
+  console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
+
+  // Bắt đầu watcher TikTok
+  await startTikTokWatcher(client, "docdoan.vanco", "1269887001587617822");
+});
+
+// Xử lý tương tác slash command và modal
+client.on(Events.InteractionCreate, async (interaction) => {
+  try {
+    if (interaction.isChatInputCommand() && interaction.commandName === "hukhong_post") {
       // Kiểm tra role bằng ID
       if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
-        await interaction.reply({ content: '❌ Bạn không có quyền sử dụng bot này.', ephemeral: true });
+        await interaction.reply({
+          content: "❌ Bạn không có quyền sử dụng bot này.",
+          ephemeral: true
+        });
         return;
       }
 
-      // Tạo Modal
+      // Tạo modal
       const modal = new ModalBuilder()
-        .setCustomId('post_modal')
-        .setTitle('Tạo bài viết mới');
+        .setCustomId("post_modal")
+        .setTitle("Tạo bài viết mới");
 
       const titleInput = new TextInputBuilder()
-        .setCustomId('title_input')
-        .setLabel('Tiêu đề')
+        .setCustomId("title_input")
+        .setLabel("Tiêu đề")
         .setStyle(TextInputStyle.Short)
         .setRequired(true);
 
       const contentInput = new TextInputBuilder()
-        .setCustomId('content_input')
-        .setLabel('Nội dung')
+        .setCustomId("content_input")
+        .setLabel("Nội dung")
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true);
 
       const mainImageInput = new TextInputBuilder()
-        .setCustomId('main_image_input')
-        .setLabel('Link ảnh bài viết (tùy chọn)')
+        .setCustomId("main_image_input")
+        .setLabel("Link ảnh bài viết (tùy chọn)")
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
       const headerInput = new TextInputBuilder()
-        .setCustomId('header_input')
-        .setLabel('Header (tùy chọn)')
+        .setCustomId("header_input")
+        .setLabel("Header (tùy chọn)")
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
       const footerInput = new TextInputBuilder()
-        .setCustomId('footer_input')
-        .setLabel('Footer (tùy chọn)')
+        .setCustomId("footer_input")
+        .setLabel("Footer (tùy chọn)")
         .setStyle(TextInputStyle.Short)
         .setRequired(false);
 
@@ -68,25 +88,26 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.showModal(modal);
     }
 
-    if (interaction.type === InteractionType.ModalSubmit && interaction.customId === 'post_modal') {
-      const title = interaction.fields.getTextInputValue('title_input');
-      const content = interaction.fields.getTextInputValue('content_input');
-      const mainImage = interaction.fields.getTextInputValue('main_image_input');
-      const header = interaction.fields.getTextInputValue('header_input');
-      const footer = interaction.fields.getTextInputValue('footer_input');
+    // Xử lý dữ liệu khi modal được gửi
+    if (interaction.type === InteractionType.ModalSubmit && interaction.customId === "post_modal") {
+      const title = interaction.fields.getTextInputValue("title_input");
+      const content = interaction.fields.getTextInputValue("content_input");
+      const mainImage = interaction.fields.getTextInputValue("main_image_input");
+      const header = interaction.fields.getTextInputValue("header_input");
+      const footer = interaction.fields.getTextInputValue("footer_input");
 
       // Tạo Embed duy nhất
-      const embed = new EmbedBuilder().setColor(0x00AE86);
+      const embed = new EmbedBuilder().setColor(0x00ae86);
 
       // Ghép Header + Title + Nội dung
-      let desc = '';
+      let desc = "";
       if (header) desc += `${header}\n\n`;
       desc += `**${title}**\n`;
       desc += content;
       embed.setDescription(desc);
 
       // Thêm Main Image nếu có
-      if (mainImage && mainImage.startsWith('http')) {
+      if (mainImage && mainImage.startsWith("http")) {
         embed.setImage(mainImage);
       }
 
@@ -95,34 +116,20 @@ client.on(Events.InteractionCreate, async interaction => {
         embed.setFooter({ text: footer });
       }
 
-      await interaction.deferReply({ ephemeral: true }); // trả lời tạm để tránh timeout
-      await interaction.editReply({ content: '✅ Bài viết đã được gửi!', ephemeral: true });
-      await interaction.channel.send({ embeds: [embed] }); // gửi Embed thực sự, không hiển thị username
+      await interaction.deferReply({ ephemeral: true });
+      await interaction.editReply({ content: "✅ Bài viết đã được gửi!", ephemeral: true });
+      await interaction.channel.send({ embeds: [embed] });
     }
-
   } catch (err) {
-    console.error('Lỗi khi xử lý interaction:', err);
+    console.error("❌ Lỗi khi xử lý interaction:", err);
     if (interaction && !interaction.replied) {
-      await interaction.reply({ content: '❌ Có lỗi xảy ra khi tạo bài viết.', ephemeral: true });
+      await interaction.reply({
+        content: "❌ Có lỗi xảy ra khi tạo bài viết.",
+        ephemeral: true
+      });
     }
   }
 });
 
-client.login(process.env.DISCORD_TOKEN);
-
-
-import { Client, GatewayIntentBits } from "discord.js";
-import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
-import dotenv from "dotenv";
-dotenv.config();
-
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
-client.once("ready", async () => {
-  console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
-
-  // Chạy watcher TikTok
-  await startTikTokWatcher(client, "tentaikhoan_tiktok", "123456789012345678");
-});
-
+// Đăng nhập bot
 client.login(process.env.DISCORD_TOKEN);
