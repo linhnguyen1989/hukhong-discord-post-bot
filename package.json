@@ -1,12 +1,20 @@
 {
   "name": "discord-hukhong-post-bot",
   "version": "1.0.0",
+  "description": "Discord bot tự động đăng video mới nhất từ kênh TikTok vào kênh Discord.",
   "main": "src/index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js"
   },
   "dependencies": {
-    "discord.js": "^14.15.3"
+    "discord.js": "^14.15.3",
+    "tiktok-scraper": "^1.4.36",
+    "node-fetch": "^3.3.2",
+    "dotenv": "^16.4.5"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
