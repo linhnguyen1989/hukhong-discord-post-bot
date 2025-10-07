@@ -111,13 +111,18 @@ client.on(Events.InteractionCreate, async interaction => {
 client.login(process.env.DISCORD_TOKEN);
 
 
-const initTikTokWatcher = require('./modules/tiktokWatcher.js');
+import { Client, GatewayIntentBits } from "discord.js";
+import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
+import dotenv from "dotenv";
+dotenv.config();
 
-client.once('ready', () => {
-  console.log(`Bot đã đăng nhập dưới tên ${client.user.tag}`);
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-  initTikTokWatcher(client, {
-    username: 'docdoan.vanco', // ví dụ: 'tiktokvn'
-	channelId: '1269887001587617822', // ID kênh Discord muốn đăng vào
-  });
+client.once("ready", async () => {
+  console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
+
+  // Chạy watcher TikTok
+  await startTikTokWatcher(client, "tentaikhoan_tiktok", "123456789012345678");
 });
+
+client.login(process.env.DISCORD_TOKEN);
