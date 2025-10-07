@@ -15,7 +15,8 @@
     "axios": "^1.12.2",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^24.23.0"
   },
   "keywords": [
     "discord",
