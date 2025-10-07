@@ -1,8 +1,4 @@
-import {
-  Client,
-  GatewayIntentBits,
-  Events
-} from "discord.js";
+import { Client, GatewayIntentBits, Events } from "discord.js";
 import dotenv from "dotenv";
 import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
 import { registerHukhongPost } from "./modules/hukhongPost.js";
@@ -22,7 +18,6 @@ client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 
   // 🚀 Bắt đầu watcher TikTok
-  // Sử dụng UID trực tiếp để tránh lỗi lấy UID
   const tiktokUsername = "docdoan.vanco";
   const tiktokUID = "7552041210135757842"; // UID đã lấy được
   const discordChannelId = "1269887001587617822";
@@ -31,7 +26,7 @@ client.once(Events.ClientReady, async () => {
   await startTikTokWatcher(client, tiktokUsername, discordChannelId, checkIntervalMinutes, tiktokUID);
 });
 
-// 🔹 Đăng ký hukhong_post module
+// 🔹 Đăng ký module hukhong_post
 registerHukhongPost(client, ALLOWED_ROLE_ID);
 
 // 🔹 Đăng nhập bot Discord

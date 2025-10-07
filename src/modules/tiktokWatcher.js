@@ -1,68 +1,71 @@
+import axios from "axios";
 import fs from "fs";
 import path from "path";
-import puppeteer from "puppeteer";
 
+/**
+ * Theo dõi video mới TikTok và gửi lên Discord.
+ * @param {Client} client - Discord client
+ * @param {string} username - Tên tài khoản TikTok
+ * @param {string} channelId - ID kênh Discord để gửi video
+ * @param {number} intervalMinutes - Khoảng thời gian kiểm tra (phút)
+ * @param {string} [uid] - UID cố định (nếu có)
+ */
 export async function startTikTokWatcher(client, username, channelId, intervalMinutes = 60, uid = null) {
   const cacheFile = path.join(process.cwd(), "tiktokCache.json");
+
+  // Load cache
   let cache = {};
-  if (fs.existsSync(cacheFile)) cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+  if (fs.existsSync(cacheFile)) {
+    cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
+  }
 
   async function checkLatestVideo() {
     try {
-      const userId = uid || username;
-      console.log(`[TikTokWatcher] Kiểm tra video mới của ${userId}...`);
+      console.log(`[TikTokWatcher] Kiểm tra video mới của ${username}...`);
 
-      // Mở browser
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
-      });
-      const page = await browser.newPage();
+      // Nếu UID có sẵn, ưu tiên dùng UID
+      let url;
+      if (uid) {
+        url = `https://www.tikwm.com/api/user/posts?uid=${uid}`;
+      } else {
+        url = `https://www.tikwm.com/api/user/posts/${username}`;
+      }
 
-      const tiktokUrl = `https://www.tiktok.com/@${username}`;
-      await page.goto(tiktokUrl, { waitUntil: "networkidle2" });
+      const res = await axios.get(url);
+      const data = res.data?.data;
 
-      // Lấy video mới nhất từ __NEXT_DATA__
-      const latestVideoId = await page.evaluate(() => {
-        const script = document.querySelector("script[id='__NEXT_DATA__']");
-        if (!script) return null;
-        const data = JSON.parse(script.textContent);
-        const videos = data?.props?.pageProps?.userInfo?.user?.videos;
-        return videos?.[0]?.id || null;
-      });
-
-      await browser.close();
-
-      if (!latestVideoId) {
+      if (!data || !data.videos || data.videos.length === 0) {
         console.log(`[TikTokWatcher] Không tìm thấy video nào cho ${username}.`);
         return;
       }
 
-      if (cache[username] === latestVideoId) {
+      const latest = data.videos[0];
+      const latestId = latest.video_id;
+
+      if (cache[username] === latestId) {
         console.log(`[TikTokWatcher] Không có video mới.`);
         return;
       }
 
       // Cập nhật cache
-      cache[username] = latestVideoId;
+      cache[username] = latestId;
       fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
 
+      // Gửi lên Discord
       const channel = await client.channels.fetch(channelId);
       if (channel) {
-        const videoLink = `https://www.tiktok.com/@${username}/video/${latestVideoId}`;
-        await channel.send({ content: `📹 Video mới từ **@${username}**:\n${videoLink}` });
-        console.log(`[TikTokWatcher] Đã đăng video mới: ${videoLink}`);
+        const videoUrl = `https://www.tiktok.com/@${username}/video/${latestId}`;
+        await channel.send({ content: `📹 Video mới từ **@${username}**:\n${videoUrl}` });
+        console.log(`[TikTokWatcher] Đã gửi video mới: ${videoUrl}`);
       }
-
     } catch (err) {
       console.error(`[TikTokWatcher] Lỗi khi kiểm tra: ${err.message}`);
     }
   }
 
-  // Gọi ngay
+  // Chạy ngay khi start
   await checkLatestVideo();
 
-  // Lặp theo interval
+  // Lặp lại theo interval
   setInterval(checkLatestVideo, intervalMinutes * 60 * 1000);
-  console.log(`[TikTokWatcher] Bắt đầu theo dõi tài khoản UID=${uid || username} (every ${intervalMinutes}m)...`);
 }
