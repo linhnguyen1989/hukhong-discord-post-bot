@@ -10,7 +10,7 @@ import {
   EmbedBuilder
 } from "discord.js";
 import dotenv from "dotenv";
-import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
+import { startTikTokWatcherByUID } from "./modules/tiktokWatcher.js"; // chú ý import hàm UID
 
 dotenv.config();
 
@@ -27,9 +27,8 @@ client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 
   // 🚀 Bắt đầu watcher TikTok
-  // Theo dõi tài khoản docdoan.vanco, kiểm tra mỗi 3 phút
-  // Gửi thông báo video mới vào kênh có ID 1269887001587617822
-  await startTikTokWatcher(client, "docdoan.vanco", "1269887001587617822", 3);
+  // Truyền trực tiếp UID (7552041210135757842), kiểm tra mỗi 3 phút
+  await startTikTokWatcherByUID(client, "7552041210135757842", "1269887001587617822", 3);
 });
 
 // 🔹 Xử lý slash command và modal
