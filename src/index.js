@@ -33,7 +33,6 @@ client.once(Events.ClientReady, async () => {
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand() && interaction.commandName === "hukhong_post") {
-      // Kiểm tra role bằng ID
       if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
         await interaction.reply({
           content: "❌ Bạn không có quyền sử dụng bot này.",
@@ -42,7 +41,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return;
       }
 
-      // Tạo modal
+      // Tạo modal nhập dữ liệu
       const modal = new ModalBuilder()
         .setCustomId("post_modal")
         .setTitle("Tạo bài viết mới");
@@ -88,7 +87,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.showModal(modal);
     }
 
-    // Xử lý dữ liệu khi modal được gửi
+    // Khi modal được gửi
     if (interaction.type === InteractionType.ModalSubmit && interaction.customId === "post_modal") {
       const title = interaction.fields.getTextInputValue("title_input");
       const content = interaction.fields.getTextInputValue("content_input");
@@ -96,25 +95,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
       const header = interaction.fields.getTextInputValue("header_input");
       const footer = interaction.fields.getTextInputValue("footer_input");
 
-      // Tạo Embed duy nhất
       const embed = new EmbedBuilder().setColor(0x00ae86);
 
-      // Ghép Header + Title + Nội dung
       let desc = "";
       if (header) desc += `${header}\n\n`;
-      desc += `**${title}**\n`;
-      desc += content;
+      desc += `**${title}**\n${content}`;
       embed.setDescription(desc);
 
-      // Thêm Main Image nếu có
-      if (mainImage && mainImage.startsWith("http")) {
-        embed.setImage(mainImage);
-      }
-
-      // Thêm Footer text nếu có
-      if (footer) {
-        embed.setFooter({ text: footer });
-      }
+      if (mainImage && mainImage.startsWith("http")) embed.setImage(mainImage);
+      if (footer) embed.setFooter({ text: footer });
 
       await interaction.deferReply({ ephemeral: true });
       await interaction.editReply({ content: "✅ Bài viết đã được gửi!", ephemeral: true });
