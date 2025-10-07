@@ -17,16 +17,20 @@ const ALLOWED_ROLE_ID = "1279675797346586674";
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 
-  // 🚀 Bắt đầu watcher TikTok
+  // 🚀 Thông số watcher TikTok
   const tiktokUsername = "docdoan.vanco";
   const tiktokUID = "7552041210135757842"; // UID đã lấy được
   const discordChannelId = "1269887001587617822";
   const checkIntervalMinutes = 3;
 
+  // 🔹 Bắt đầu watcher TikTok
   await startTikTokWatcher(client, tiktokUsername, discordChannelId, checkIntervalMinutes, tiktokUID);
+
+  // 🔹 (Tùy chọn) gửi video gần nhất ngay lập tức
+  // await startTikTokWatcher.testSendLatestVideo?.();
 });
 
-// 🔹 Đăng ký module hukhong_post
+// 🔹 Đăng ký hukhong_post module
 registerHukhongPost(client, ALLOWED_ROLE_ID);
 
 // 🔹 Đăng nhập bot Discord
