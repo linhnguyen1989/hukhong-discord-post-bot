@@ -1,55 +1,26 @@
-import axios from "axios";
-import Parser from "rss-parser";
+// modules/tiktokWatcherRSS.js
 import fs from "fs";
-import path from "path";
+import Parser from "rss-parser";
 
 /**
- * Theo dõi TikTok qua RSSHub và gửi video mới vào Discord.
- * @param {Client} client - Discord client
- * @param {string} username - TikTok username
- * @param {string} channelId - Discord channel ID
- * @param {number} intervalMinutes - Kiểm tra mỗi bao nhiêu phút
+ * startTikTokWatcherRSS - Theo dõi TikTok qua RSSHub
+ * @param {Client} client - instance của Discord.js Client
+ * @param {string} username - username TikTok cần theo dõi
+ * @param {string} channelId - ID kênh Discord để gửi thông báo
+ * @param {number} intervalMinutes - thời gian kiểm tra video mới (mặc định 3 phút)
  */
-export async function startTikTokRSSWatcher(client, username, channelId, intervalMinutes = 5) {
-  const cacheFile = path.join(process.cwd(), "tiktokRSSCache.json");
-
-  // Đọc cache
-  let cache = {};
-  if (fs.existsSync(cacheFile)) {
-    cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
-  }
-
-  // Các server RSSHub free thay thế
-  const rssServers = [
-    "https://rsshub.app",
-    "https://rsshub.fyi",
-    "https://rsshub.ceshiren.com"
-  ];
+export async function startTikTokWatcherRSS(client, username, channelId, intervalMinutes = 3) {
+  console.log(`[TikTokRSS] Đang theo dõi ${username} (every ${intervalMinutes}m) via RSSHub...`);
 
   const parser = new Parser();
+  const cacheFile = "./tiktokRSSCache.json";
 
-  async function fetchRSS(retries = 3) {
-    for (const server of rssServers) {
-      const url = `${server}/tiktok/user/${username}`;
-      for (let i = 0; i < retries; i++) {
-        try {
-          const res = await axios.get(url, { timeout: 10000 });
-          const feed = await parser.parseString(res.data);
-          return feed;
-        } catch (err) {
-          console.warn(`[TikTokRSS] Request attempt ${i + 1} failed for server ${server}: ${err.message}`);
-          if (i === retries - 1) break; // thử server khác
-          await new Promise(r => setTimeout(r, 3000));
-        }
-      }
-    }
-    throw new Error(`Không thể lấy RSS cho ${username} từ tất cả server.`);
-  }
-
-  async function checkLatestVideo() {
-    console.log(`[TikTokRSS] Kiểm tra RSS của ${username}...`);
+  // Hàm kiểm tra RSS
+  async function checkRSS() {
     try {
-      const feed = await fetchRSS();
+      const feedUrl = `https://rsshub.app/tiktok/user/${username}`;
+      const feed = await parser.parseURL(feedUrl);
+
       if (!feed.items || feed.items.length === 0) {
         console.log(`[TikTokRSS] Không tìm thấy video nào cho ${username}.`);
         return;
@@ -58,16 +29,20 @@ export async function startTikTokRSSWatcher(client, username, channelId, interva
       const latest = feed.items[0];
       const latestId = latest.link;
 
-      if (cache[username] === latestId) {
-        console.log(`[TikTokRSS] Không có video mới.`);
-        return;
+      // Load cache
+      let cache = {};
+      if (fs.existsSync(cacheFile)) {
+        cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
       }
+
+      // Nếu video đã gửi rồi thì bỏ qua
+      if (cache[username] === latestId) return;
 
       // Cập nhật cache
       cache[username] = latestId;
       fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
 
-      // Gửi lên Discord
+      // Gửi thông báo Discord
       const channel = await client.channels.fetch(channelId);
       if (channel) {
         await channel.send({
@@ -80,9 +55,9 @@ export async function startTikTokRSSWatcher(client, username, channelId, interva
     }
   }
 
-  // Gọi ngay 1 lần
-  await checkLatestVideo();
+  // Kiểm tra ngay lần đầu
+  await checkRSS();
 
-  // Lặp lại
-  setInterval(checkLatestVideo, intervalMinutes * 60 * 1000);
+  // Lặp định kỳ
+  setInterval(checkRSS, intervalMinutes * 60 * 1000);
 }
