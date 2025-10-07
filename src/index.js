@@ -27,8 +27,9 @@ client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 
   // 🚀 Bắt đầu watcher TikTok
-  // Kiểm tra tài khoản docdoan.vanco, gửi video mới vào kênh ID dưới đây
-  await startTikTokWatcher(client, "docdoan.vanco", "1269887001587617822");
+  // Theo dõi tài khoản docdoan.vanco, kiểm tra mỗi 3 phút
+  // Gửi thông báo video mới vào kênh có ID 1269887001587617822
+  await startTikTokWatcher("docdoan.vanco", 3, client, "1269887001587617822");
 });
 
 // 🔹 Xử lý slash command và modal
