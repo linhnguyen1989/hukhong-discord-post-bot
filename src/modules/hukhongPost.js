@@ -1,5 +1,4 @@
 import {
-  Events,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -9,55 +8,55 @@ import {
 } from "discord.js";
 
 /**
- * �ang k� slash command /hukhong_post v� x? l� modal
+ * Đăng ký slash command /hukhong_post
  * @param {Client} client - Discord client
- * @param {string} allowedRoleId - Role du?c ph�p s? d?ng command
+ * @param {string} allowedRoleId - Role ID được phép dùng bot
  */
 export function registerHukhongPost(client, allowedRoleId) {
-  client.on(Events.InteractionCreate, async (interaction) => {
+  client.on("interactionCreate", async (interaction) => {
     try {
       // --- Slash command /hukhong_post ---
       if (interaction.isChatInputCommand() && interaction.commandName === "hukhong_post") {
         if (!interaction.member.roles.cache.has(allowedRoleId)) {
           await interaction.reply({
-            content: "? B?n kh�ng c� quy?n s? d?ng bot n�y.",
+            content: "❌ Bạn không có quyền sử dụng bot này.",
             ephemeral: true
           });
           return;
         }
 
-        // T?o modal nh?p d? li?u b�i vi?t
+        // Tạo modal nhập dữ liệu bài viết
         const modal = new ModalBuilder()
           .setCustomId("post_modal")
-          .setTitle("T?o b�i vi?t m?i");
+          .setTitle("Tạo bài viết mới");
 
         const titleInput = new TextInputBuilder()
           .setCustomId("title_input")
-          .setLabel("Ti�u d?")
+          .setLabel("Tiêu đề")
           .setStyle(TextInputStyle.Short)
           .setRequired(true);
 
         const contentInput = new TextInputBuilder()
           .setCustomId("content_input")
-          .setLabel("N?i dung")
+          .setLabel("Nội dung")
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true);
 
         const mainImageInput = new TextInputBuilder()
           .setCustomId("main_image_input")
-          .setLabel("Link ?nh b�i vi?t (t�y ch?n)")
+          .setLabel("Link ảnh bài viết (tùy chọn)")
           .setStyle(TextInputStyle.Short)
           .setRequired(false);
 
         const headerInput = new TextInputBuilder()
           .setCustomId("header_input")
-          .setLabel("Header (t�y ch?n)")
+          .setLabel("Header (tùy chọn)")
           .setStyle(TextInputStyle.Short)
           .setRequired(false);
 
         const footerInput = new TextInputBuilder()
           .setCustomId("footer_input")
-          .setLabel("Footer (t�y ch?n)")
+          .setLabel("Footer (tùy chọn)")
           .setStyle(TextInputStyle.Short)
           .setRequired(false);
 
@@ -72,7 +71,7 @@ export function registerHukhongPost(client, allowedRoleId) {
         await interaction.showModal(modal);
       }
 
-      // --- Khi modal du?c g?i ---
+      // --- Khi modal được gửi ---
       if (interaction.type === InteractionType.ModalSubmit && interaction.customId === "post_modal") {
         const title = interaction.fields.getTextInputValue("title_input");
         const content = interaction.fields.getTextInputValue("content_input");
@@ -82,7 +81,7 @@ export function registerHukhongPost(client, allowedRoleId) {
 
         const embed = new EmbedBuilder().setColor(0x00ae86);
 
-        // G?p header, title, content
+        // Gộp header, title, content
         let desc = "";
         if (header) desc += `${header}\n\n`;
         desc += `**${title}**\n${content}`;
@@ -92,14 +91,14 @@ export function registerHukhongPost(client, allowedRoleId) {
         if (footer) embed.setFooter({ text: footer });
 
         await interaction.deferReply({ ephemeral: true });
-        await interaction.editReply({ content: "? B�i vi?t d� du?c g?i!", ephemeral: true });
+        await interaction.editReply({ content: "✅ Bài viết đã được gửi!", ephemeral: true });
         await interaction.channel.send({ embeds: [embed] });
       }
     } catch (err) {
-      console.error("? L?i khi x? l� interaction:", err);
+      console.error("❌ Lỗi khi xử lý interaction:", err);
       if (interaction && !interaction.replied) {
         await interaction.reply({
-          content: "? C� l?i x?y ra khi t?o b�i vi?t.",
+          content: "❌ Có lỗi xảy ra khi tạo bài viết.",
           ephemeral: true
         });
       }
