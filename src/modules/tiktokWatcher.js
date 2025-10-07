@@ -2,90 +2,90 @@ import axios from "axios";
 import fs from "fs";
 import path from "path";
 
-/**
- * Theo dõi tài khoản TikTok và gửi video mới nhất lên kênh Discord.
- * Kiểm tra mỗi 24h.
- * @param {Client} client - Discord client
- * @param {string} username - Tên tài khoản TikTok (ví dụ: 'tiktokvn')
- * @param {string} channelId - ID kênh Discord để đăng
- */
 export async function startTikTokWatcher(client, username, channelId) {
   const cacheFile = path.join(process.cwd(), "tiktokCache.json");
-
-  // Đọc cache (nếu có)
   let cache = {};
   if (fs.existsSync(cacheFile)) {
     cache = JSON.parse(fs.readFileSync(cacheFile, "utf8"));
   }
 
-  /**
-   * Lấy UID thật từ username TikTok
-   */
-  async function getUserId(username) {
-    try {
-      const searchUrl = `https://www.tikwm.com/api/user/info/${username}`;
-      const res = await axios.get(searchUrl, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-          Referer: "https://www.tikwm.com/",
-        },
-      });
-
-      const uid =
-        res.data?.data?.user?.id || res.data?.data?.user?.unique_id || null;
-      if (!uid) throw new Error("Không tìm thấy UID TikTok");
-      return uid;
-    } catch (err) {
-      throw new Error("Không thể lấy UID TikTok: " + err.message);
-    }
+  async function getUID_TikWM(username) {
+    const url = `https://www.tikwm.com/api/user/info/${username}`;
+    const res = await axios.get(url);
+    return res.data?.data?.user?.id || null;
   }
 
-  /**
-   * Kiểm tra video mới nhất
-   */
+  async function parseUID_fromVideo(videoUrl) {
+    // videoUrl có dạng https://www.tiktok.com/@username/video/VID_ID
+    const parts = videoUrl.split("/video/");
+    if (parts.length >= 2) {
+      const vidId = parts[1].split("?")[0];
+      return vidId; // coi như dùng vidId tạm như UID
+    }
+    return null;
+  }
+
+  async function fetchUserVideoListByUid(uid) {
+    const url = `https://www.tikwm.com/api/user/posts/${uid}`;
+    const res = await axios.get(url);
+    return res.data?.data?.videos || [];
+  }
+
+  async function fallbackGetVideosByUsername(username) {
+    // lấy video đầu tiên từ endpoint public video list hoặc scraping
+    const urlPublic = `https://www.tiktok.com/@${username}/video/0`; // thử
+    const res = await axios.get(urlPublic, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 ...",
+      },
+    });
+    // parse HTML để lấy video ID — đây là scraper -> phức tạp
+    return null;
+  }
+
   async function checkLatestVideo() {
     try {
       console.log(`[TikTok] Đang kiểm tra video mới của ${username}...`);
 
-      const uid = await getUserId(username);
-      const url = `https://www.tikwm.com/api/user/posts/${uid}`;
-      const res = await axios.get(url, {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36",
-          Referer: "https://www.tikwm.com/",
-        },
-      });
+      let uid;
+      try {
+        uid = await getUID_TikWM(username);
+      } catch {
+        uid = null;
+      }
 
-      const data = res.data?.data;
-      if (!data || !data.videos || data.videos.length === 0) {
+      let videos = [];
+      if (uid) {
+        videos = await fetchUserVideoListByUid(uid);
+      }
+
+      if ((!videos || videos.length === 0) && username) {
+        // fallback: thử một số phương pháp khác
+        console.log(`[TikTok] UID không tìm được, thử fallback`);
+        const fallbackVideos = await fallbackGetVideosByUsername(username);
+        if (fallbackVideos) videos = fallbackVideos;
+      }
+
+      if (!videos || videos.length === 0) {
         console.log(`[TikTok] Không tìm thấy video nào cho ${username}.`);
         return;
       }
 
-      const latest = data.videos[0];
-      const latestId = latest.video_id;
+      const latest = videos[0];
+      const latestId = latest.video_id || latest.id || latest.vid; // tùy dữ liệu
 
-      // Nếu video mới trùng với cache thì bỏ qua
       if (cache[username] === latestId) {
         console.log(`[TikTok] Không có video mới.`);
         return;
       }
 
-      // Cập nhật cache
       cache[username] = latestId;
       fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
 
-      // Gửi vào Discord
       const channel = await client.channels.fetch(channelId);
       if (channel) {
         const videoUrl = `https://www.tiktok.com/@${username}/video/${latestId}`;
-        await channel.send({
-          content: `📹 Video mới từ **@${username}**:\n${videoUrl}`,
-        });
+        await channel.send({ content: `📹 Video mới từ **@${username}**:\n${videoUrl}` });
         console.log(`[TikTok] Đã đăng video mới: ${videoUrl}`);
       }
     } catch (err) {
@@ -93,10 +93,6 @@ export async function startTikTokWatcher(client, username, channelId) {
     }
   }
 
-  // Gọi ngay 1 lần khi bot khởi động
   await checkLatestVideo();
-
-  // Lặp lại mỗi 24 giờ (đổi số giờ nếu cần test)
-  const intervalHours = 24; // chỉnh thành 0.1 để test mỗi 6 phút
-  setInterval(checkLatestVideo, intervalHours * 60 * 60 * 1000);
+  setInterval(checkLatestVideo, 24 * 60 * 60 * 1000);
 }
