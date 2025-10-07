@@ -9,30 +9,32 @@ import {
   InteractionType,
   EmbedBuilder
 } from "discord.js";
-import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
-startTikTokWatcher("docdoan.vanco", 3); // kiểm tra mỗi 3 phút
 import dotenv from "dotenv";
+import { startTikTokWatcher } from "./modules/tiktokWatcher.js";
+
 dotenv.config();
 
-// Khởi tạo bot Discord
+// 🔹 Khởi tạo bot Discord
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
 
-// Role được phép dùng bot (bằng ID)
+// 🔹 Role được phép dùng bot (bằng ID)
 const ALLOWED_ROLE_ID = "1279675797346586674";
 
-// Khi bot sẵn sàng
+// 🔹 Khi bot sẵn sàng
 client.once(Events.ClientReady, async () => {
   console.log(`✅ Bot đã đăng nhập: ${client.user.tag}`);
 
-  // Bắt đầu watcher TikTok
+  // 🚀 Bắt đầu watcher TikTok
+  // Kiểm tra tài khoản docdoan.vanco, gửi video mới vào kênh ID dưới đây
   await startTikTokWatcher(client, "docdoan.vanco", "1269887001587617822");
 });
 
-// Xử lý tương tác slash command và modal
+// 🔹 Xử lý slash command và modal
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
+    // --- Slash command /hukhong_post ---
     if (interaction.isChatInputCommand() && interaction.commandName === "hukhong_post") {
       if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
         await interaction.reply({
@@ -42,7 +44,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return;
       }
 
-      // Tạo modal nhập dữ liệu
+      // Tạo modal nhập dữ liệu bài viết
       const modal = new ModalBuilder()
         .setCustomId("post_modal")
         .setTitle("Tạo bài viết mới");
@@ -88,7 +90,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await interaction.showModal(modal);
     }
 
-    // Khi modal được gửi
+    // --- Khi modal được gửi ---
     if (interaction.type === InteractionType.ModalSubmit && interaction.customId === "post_modal") {
       const title = interaction.fields.getTextInputValue("title_input");
       const content = interaction.fields.getTextInputValue("content_input");
@@ -98,6 +100,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
       const embed = new EmbedBuilder().setColor(0x00ae86);
 
+      // Gộp header, title, content
       let desc = "";
       if (header) desc += `${header}\n\n`;
       desc += `**${title}**\n${content}`;
@@ -121,5 +124,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// Đăng nhập bot
+// 🔹 Đăng nhập bot Discord
 client.login(process.env.DISCORD_TOKEN);

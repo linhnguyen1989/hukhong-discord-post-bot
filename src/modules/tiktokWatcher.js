@@ -1,103 +1,141 @@
 import axios from "axios";
 
-// Hàm lấy UID TikTok từ tên người dùng
+/**
+ * Thử lấy UID TikTok qua API công khai chính thức.
+ */
+async function getUIDFromAPI(username) {
+  try {
+    const res = await axios.get(
+      `https://www.tiktok.com/api/user/detail/?uniqueId=${username}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+          Referer: "https://www.tiktok.com/",
+        },
+      }
+    );
+
+    const uid = res.data?.userInfo?.user?.id;
+    if (uid) {
+      console.log(`[TikTok] ✅ UID API của ${username} là ${uid}`);
+      return uid;
+    }
+
+    console.warn(`[TikTok] API không trả về UID cho ${username}.`);
+    return null;
+  } catch (err) {
+    console.warn(`[TikTok] API TikTok thất bại (${err.message}).`);
+    return null;
+  }
+}
+
+/**
+ * Nếu API thất bại, fallback sang HTML scraping.
+ */
+async function getUIDFromHTML(username) {
+  try {
+    const html = await axios.get(`https://www.tiktok.com/@${username}`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+      },
+    });
+
+    const match = html.data.match(/"uid":"(\d+)"/);
+    if (match && match[1]) {
+      const uid = match[1];
+      console.log(`[TikTok] ✅ UID HTML của ${username} là ${uid}`);
+      return uid;
+    }
+
+    console.error(`[TikTok] ❌ Không tìm thấy UID trong HTML cho ${username}.`);
+    return null;
+  } catch (err) {
+    console.error(`[TikTok] ❌ Lỗi khi lấy UID qua HTML: ${err.message}`);
+    return null;
+  }
+}
+
+/**
+ * Lấy UID TikTok với chế độ hybrid (API + fallback HTML)
+ */
 async function getTikTokUID(username) {
+  if (typeof username !== "string") {
+    console.error(`[TikTok] Sai kiểu dữ liệu username: ${username}`);
+    return null;
+  }
+
+  let uid = await getUIDFromAPI(username);
+  if (!uid) uid = await getUIDFromHTML(username);
+
+  if (!uid) {
+    console.error(`[TikTok] 🚫 Không thể lấy UID TikTok cho ${username}.`);
+  }
+  return uid;
+}
+
+/**
+ * Lấy video mới nhất của TikTok user qua TikWM API
+ */
+async function getLatestVideoByUID(uid) {
   try {
-    const url = `https://www.tiktok.com/@${username}`;
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
-        "Referer": "https://www.tiktok.com/",
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-    });
+    const apiUrl = `https://www.tikwm.com/api/user/posts/${uid}`;
+    const res = await axios.get(apiUrl);
+    const data = res.data?.data;
 
-    const html = response.data;
-
-    // Tìm UID trong mã HTML của TikTok
-    const uidMatch = html.match(/"uid":"(\d+)"/);
-    if (uidMatch) {
-      console.log(`[TikTok] UID của ${username} là ${uidMatch[1]}`);
-      return uidMatch[1];
+    if (!data || !data.videos || data.videos.length === 0) {
+      console.log(`[TikTok] Không có video nào cho UID ${uid}.`);
+      return null;
     }
 
-    console.error("[TikTok] Không tìm thấy UID trong HTML!");
-    return null;
-  } catch (error) {
-    console.error(`[TikTok] Lỗi khi lấy UID cho ${username}: ${error.message}`);
+    const latest = data.videos[0];
+    return {
+      id: latest.video_id,
+      url: `https://www.tiktok.com/@${data.user.unique_id}/video/${latest.video_id}`,
+    };
+  } catch (err) {
+    console.error(`[TikTok] Lỗi khi lấy video mới: ${err.message}`);
     return null;
   }
 }
 
-// Hàm lấy video mới nhất của người dùng
-async function getLatestVideo(username) {
-  try {
-    const url = `https://www.tiktok.com/@${username}`;
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0 Safari/537.36",
-        "Referer": "https://www.tiktok.com/",
-      },
-    });
-
-    const html = response.data;
-
-    // Regex để trích xuất video ID đầu tiên
-    const videoMatch = html.match(/"id":"(\d{8,})","desc":".*?"/);
-    if (videoMatch) {
-      return {
-        id: videoMatch[1],
-        url: `https://www.tiktok.com/@${username}/video/${videoMatch[1]}`,
-      };
-    }
-
-    console.error("[TikTok] Không tìm thấy video mới trong HTML!");
-    return null;
-  } catch (error) {
-    console.error(`[TikTok] Lỗi khi lấy video mới: ${error.message}`);
-    return null;
-  }
-}
-
-// Biến tạm lưu ID video cuối cùng đã kiểm tra
 let lastVideoId = null;
 
-// Hàm khởi động watcher
-export async function startTikTokWatcher(username, intervalMinutes = 5) {
+/**
+ * Theo dõi tài khoản TikTok
+ * @param {string} username - tên tài khoản TikTok (ví dụ: "docdoan.vanco")
+ * @param {number} intervalMinutes - số phút giữa mỗi lần kiểm tra
+ */
+export async function startTikTokWatcher(username, intervalMinutes = 10) {
   console.log(`[TikTok] Bắt đầu theo dõi tài khoản ${username}...`);
 
-  const uid = await getTikTokUID(username);
-  if (!uid) {
-    console.error(`[TikTok] Không thể lấy UID TikTok cho ${username}.`);
+  if (typeof username !== "string") {
+    console.error("[TikTok] username phải là chuỗi (string).");
     return;
   }
 
-  console.log(`[TikTok] Đang theo dõi video mới từ ${username} (UID: ${uid})`);
+  const uid = await getTikTokUID(username);
+  if (!uid) return;
 
-  // Hàm kiểm tra định kỳ
+  console.log(`[TikTok] Đang theo dõi video mới từ @${username} (UID: ${uid})`);
+
   const checkNewVideo = async () => {
-    console.log(`[TikTok] Đang kiểm tra video mới của ${username}...`);
-    const latestVideo = await getLatestVideo(username);
+    console.log(`[TikTok] 🔎 Kiểm tra video mới của ${username}...`);
+    const latestVideo = await getLatestVideoByUID(uid);
 
     if (latestVideo) {
       if (lastVideoId && latestVideo.id !== lastVideoId) {
-        console.log(
-          `[TikTok] 🔔 Phát hiện video mới: ${latestVideo.url}`
-        );
+        console.log(`[TikTok] 🚨 Video mới: ${latestVideo.url}`);
       } else if (!lastVideoId) {
-        console.log(`[TikTok] Video đầu tiên được lưu: ${latestVideo.id}`);
+        console.log(`[TikTok] 📌 Ghi nhận video đầu tiên: ${latestVideo.id}`);
       }
       lastVideoId = latestVideo.id;
     } else {
-      console.warn(`[TikTok] Không thể lấy thông tin video mới.`);
+      console.warn(`[TikTok] Không thể lấy video mới cho ${username}.`);
     }
   };
 
-  // Kiểm tra lần đầu ngay lập tức
   await checkNewVideo();
-
-  // Sau đó lặp lại mỗi X phút
   setInterval(checkNewVideo, intervalMinutes * 60 * 1000);
 }
